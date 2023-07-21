@@ -1,0 +1,6 @@
+[submodule "utils/encoding/cppcodec"]
+	path = utils/cppcodec
+	url = https://github.com/tplgy/cppcodec.git
+[submodule "utils/cpptoml"]
+	path = utils/cpptoml
+	url = https://github.com/skystrife/cpptoml.git

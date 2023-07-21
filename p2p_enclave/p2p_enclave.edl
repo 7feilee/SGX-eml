@@ -1,0 +1,76 @@
+/*
+
+Copyright 2018 Intel Corporation
+
+This software and the related documents are Intel copyrighted materials,
+and your use of them is governed by the express license under which they
+were provided to you (License). Unless the License provides otherwise,
+you may not use, modify, copy, publish, distribute, disclose or transmit
+this software or the related documents without Intel's prior written
+permission.
+
+This software and the related documents are provided as is, with no
+express or implied warranties, other than those that are expressly stated
+in the License.
+
+*/
+
+enclave {
+	include "sgx_trts.h"
+	include "sgx_utils.h"
+	include "sgx_tkey_exchange.h"
+    include "protocol.h"
+    include "trust_policy.h"
+    include "sgx_tprotected_fs.h"
+ 
+    from "sgx_tsgxssl.edl" import *;
+    from "sgx_pthread.edl" import *;
+	from "sgx_tkey_exchange.edl" import *;
+    from "sgx_tprotected_fs.edl" import *;
+
+    enum OutputTarget {
+        TO_STDOUT = 0,
+        TO_STDERR = 1,
+        TO_APPLOG = 2
+    };
+
+	trusted {
+		public sgx_status_t get_report([out] sgx_report_t *report, [in] sgx_target_info_t *target_info );
+
+		public sgx_status_t enclave_ra_init(sgx_ec256_public_t key, int b_pse, [out] sgx_ra_context_t *ctx, [out] sgx_status_t *pse_status);
+
+		public sgx_status_t enclave_ra_init_def(int b_pse, [out] sgx_ra_context_t *ctx, [out] sgx_status_t *pse_status);
+
+		public sgx_status_t enclave_ra_get_key_hash([out] sgx_status_t *get_keys_status, sgx_ra_context_t ctx, sgx_ra_key_type_t type, [out] sgx_sha256_hash_t *hash );
+
+		public sgx_status_t enclave_ra_close(sgx_ra_context_t ctx);
+
+        public sgx_status_t ecall_sp_proc_msg01(sgx_spid_t spid, sgx_quote_sign_type_t quote_type, ra_msg01_t msg01, [in, size=sigrl_size] const char *sigrl, uint32_t sigrl_size, [out, size=msg2_size] sgx_ra_msg2_t *msg2, uint32_t msg2_size, [out] attestation_error_t *att_error);
+
+        public sgx_status_t ecall_sp_proc_msg3([in, size=msg3_size] const sgx_ra_msg3_t *msg3, uint32_t msg3_size, [in, string] const char *attestation_report, ra_trust_policy policy, [out] ra_msg4_t *msg4, [out] attestation_error_t *att_error);
+
+        public sgx_status_t ecall_isv_init_share_key(sgx_ra_context_t ctx, [out, count=32] sgx_sha256_hash_t *hash);
+
+        public sgx_status_t ecall_sp_init_share_key([out, size=256] sgx_sha256_hash_t *hash);
+
+        public sgx_status_t aes_ctr_128_encrypt([in, out, count=length] uint8_t *buffer, uint32_t length, [out]uint8_t nonce[16]);
+
+        public sgx_status_t aes_ctr_128_decrypt([in, out, count=length] uint8_t *buffer, uint32_t length, [in]uint8_t nonce[16]);
+
+        public sgx_status_t ecall_isv_put_secret(sgx_ra_context_t context,  
+                                            [in,count=16]const uint8_t* p_secret,
+                                            [in,count=16]const uint8_t* p_gcm_mac);
+
+        public sgx_status_t ecall_get_sp_secret([in, out, size=16] uint8_t* p_secret);
+
+	};
+
+	untrusted {
+        int ocall_fputs(OutputTarget target, [in, string] const char *str);
+
+	    void ocall_eputs([in, string] const char* macro_file, [in, string] const char* macro_function, int macro_line, [in, string] const char* message);
+
+	};
+};
+
+
