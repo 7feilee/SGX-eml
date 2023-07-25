@@ -210,7 +210,7 @@ sgx_status_t private_build_msg4(ra_secret_t &secret, const string &attestation_r
     memset(&msg4, 0, sizeof(ra_msg4_t));
 
     string isvEnclaveQuoteStatus = reportObj["isvEnclaveQuoteStatus"].ToString();
-    if (isvEnclaveQuoteStatus == "OK" || isvEnclaveQuoteStatus == "GROUP_OUT_OF_DATE") {
+    if (isvEnclaveQuoteStatus == "OK") {
         msg4.status = Trusted;
     } else if (isvEnclaveQuoteStatus == "CONFIGURATION_NEEDED") {
         msg4.status = policy.allow_configuration_needed ? Trusted_Complicated : NotTrusted_Complicated;
@@ -220,11 +220,33 @@ sgx_status_t private_build_msg4(ra_secret_t &secret, const string &attestation_r
         msg4.status = NotTrusted;
     }
 
+    uint8_t src[16 + 32 + 32];
+
     if (msg4.status == Trusted || msg4.status == NotTrusted_Complicated) {
         string isvEnclaveQuoteBody = reportObj["isvEnclaveQuoteBody"].ToString();
         vector<uint8_t> quote_bytes = base64_decode(isvEnclaveQuoteBody);
         const sgx_quote_t &quote = *(sgx_quote_t *) quote_bytes.data();
         const sgx_report_body_t &report_body = quote.report_body;
+        int rv = 0;
+        ocall_fputs(&rv, TO_STDOUT, "/**************** Unsealing App Owner's secret, App Enclave's MRSIGNER, MRENCLAVE ****************/\n");
+        char filename_buf[FILENAME_BUF_LEN];
+        memcpy(src + 16, &report_body.mr_signer, 32);
+        memcpy(src + 16 + 32, &report_body.mr_enclave, 32);
+        status = get_filename(&src[16], filename_buf);
+        check_sgx_status(status);
+
+        SGX_FILE* fp = sgx_fopen_auto_key(filename_buf, "rb");
+        if (fp == NULL) {
+            return SGX_ERROR_UNEXPECTED;
+        }
+        // Assuming the file contains exactly SAMPLE_PAYLOAD_SIZE bytes.
+        size_t readsize = sgx_fread(src, 1, SAMPLE_PAYLOAD_SIZE, fp);
+
+        sgx_fclose(fp);
+
+        if (readsize != SAMPLE_PAYLOAD_SIZE) {
+            return SGX_ERROR_UNEXPECTED;
+        }
 
         if (!policy.allow_debug && report_body.attributes.flags & SGX_FLAGS_DEBUG) {
             // Is the enclave compiled in debug mode?
@@ -238,11 +260,25 @@ sgx_status_t private_build_msg4(ra_secret_t &secret, const string &attestation_r
             // Does the ISV SVN meet the minimum version?
             msg4.status = NotTrusted;
             ocall_eputs(__FILE__, __FUNCTION__, __LINE__, "isv_svn");
-        } else if (memcmp(&report_body.mr_signer, &policy.mrsigner, sizeof(sgx_measurement_t)) != 0) {
+        } else if (memcmp(&report_body.mr_signer, &src[16], sizeof(sgx_measurement_t)) != 0) {
             // Does the MRSIGNER match?
            msg4.status = NotTrusted;
            ocall_eputs(__FILE__, __FUNCTION__, __LINE__, "isv_mr_signer");
+        } else if (memcmp(&report_body.mr_enclave, &src[16 + 32], sizeof(sgx_measurement_t)) != 0) {
+            // Does the MRENCLAVE match?
+           msg4.status = NotTrusted;
+           ocall_eputs(__FILE__, __FUNCTION__, __LINE__, "isv_mr_enclave");
         }
+    }
+
+    if(msg4.status != NotTrusted){
+        int rv = 0;
+
+        status = derive_key(DERIVE_KEY_SK, secret.shared_secret, secret.sk);
+        check_sgx_status(status);
+        uint8_t aes_gcm_iv[12] = {0};
+        status = sgx_rijndael128GCM_encrypt(reinterpret_cast<sgx_ec_key_128bit_t*>(&secret.sk), (uint8_t*)src, SAMPLE_PAYLOAD_SIZE, msg4.secret.payload, &aes_gcm_iv[0], 12, NULL, 0, (sgx_aes_gcm_128bit_tag_t *)(&msg4.secret.payload_tag));
+        check_sgx_status(status);
     }
 
 #if 0

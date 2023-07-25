@@ -108,12 +108,30 @@ public:
 
     const void save_secret(const uint8_t *p_secret, const uint8_t *p_gcm_mac){
         sgx_status_t sgx_status, ret_status;
-        sgx_status = ecall_isv_put_secret(
+        sgx_status = ecall_app_put_secret(
                 eid, &ret_status, ra_ctx,
                 p_secret, p_gcm_mac);
 
         if (sgx_status != SGX_SUCCESS) {
-            throw sgx_error("ecall_isv_put_secret", sgx_status);
+            throw sgx_error("ecall_app_put_secret", sgx_status);
+        }
+    
+        if (ret_status != SGX_SUCCESS) {
+            throw sgx_error("ecall_app_put_secret", ret_status);
+        }
+    }
+
+    const void get_secret(uint8_t *p_secret, const uint8_t *p_gcm_mac){
+        sgx_status_t sgx_status, ret_status;
+        sgx_status = ecall_app_get_secret(
+                eid, &ret_status, ra_ctx,
+                p_secret, p_gcm_mac);
+
+        if (sgx_status != SGX_SUCCESS) {
+            throw sgx_error("ecall_app_get_secret", sgx_status);
+        }
+        if (ret_status != SGX_SUCCESS) {
+            throw sgx_error("ecall_app_get_secret", ret_status);
         }
     }
 
@@ -125,7 +143,9 @@ public:
         if (sgx_status != SGX_SUCCESS) {
             throw sgx_error("ecall_isv_init_share_key", sgx_status);
         }
-
+        if (ret_status != SGX_SUCCESS) {
+            throw sgx_error("ecall_isv_init_share_key", ret_status);
+        }
         return key_hash;
     }
 };

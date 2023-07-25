@@ -40,7 +40,7 @@ UserArgs::UserArgs(const string &toml) {
                       {
                               {"POLICY_MRSIGNER",      false,  TYPE_OTHERS},
                               {"POLICY_MRENCLAVE",      false,  TYPE_OTHERS},
-                              {"POLICY_PRODUCT_ID",            true,  TYPE_UINT16},
+                              {"POLICY_PRODUCT_ID",            false,  TYPE_UINT16},
                               {"POLICY_ISV_MIN_SVN", false, TYPE_UINT16},
                               {"POLICY_ALLOW_DEBUG",           false, TYPE_BOOL},
                               {"POLICY_ALLOW_CONFIGURATION_NEEDED", false, TYPE_BOOL},

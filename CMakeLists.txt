@@ -4,7 +4,7 @@ project(SGX_EML)
 set(CMAKE_CXX_STANDARD 17)
 
 # copy config.toml
-configure_file(${CMAKE_SOURCE_DIR}/config.toml ${CMAKE_BINARY_DIR}/config.toml COPYONLY)
+file(COPY ${CMAKE_SOURCE_DIR}/config DESTINATION ${CMAKE_BINARY_DIR})
 
 # Intel SGX
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)

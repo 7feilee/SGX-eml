@@ -1,0 +1,93 @@
+#======================================================================
+[client]
+#======================================================================
+
+# Set to non-zero to have the client generate a random nonce.
+# [0, 1] [DEFAULT = 1]
+CLIENT_RANDOM_NONCE = true
+
+# Set to non-zero to have the client generate a platform manifest.
+# This requires a PSE session, and thus support for platform services.
+# (Note that server hardware does not support platform services)
+# [0, 1] [DEFAULT = 0]
+CLIENT_USE_PLATFORM_SERVICES = false
+
+#======================================================================
+[service_provider]
+#======================================================================
+
+# Set to 0 to query the production IAS instead of development.
+# Note that the SPID and certificate are different for production and
+# development, so if you change this you'll need to change them, too.
+# [0, 1] [DEFAULT = 0]
+QUERY_IAS_DEVELOPMENT = true
+
+# Your Service Provider ID. This should be a 32-character hex string.
+# [hex[32]] [REQUIRED]
+SPID = "C3BD55317084033FBCEA7690EA796C8B"
+
+# Set to 0 if this SPID is associated with unlinkable quotes.
+# Set to 1 if this SPID is associated with linkable quotes.
+# If you change this, you'll need to change SPID, IAS_PRIMARY_SUBSCRIPTION_KEY
+# and IAS_SECONDARY_SUBSCRIPTION_KEY too.
+# [uint16] [DEFAULT = 0]
+QUOTE_TYPE = 1
+
+# Intel Attestation Service Primary Subscription Key
+# More Info: https://api.portal.trustedservices.intel.com/EPID-attestation
+# Associated SPID above is required
+# [hex[32]] [REQUIRED]
+IAS_PRIMARY_SUBSCRIPTION_KEY = "8bfb289294bc479f893199ff94e8af4b"
+
+# Intel Attestation Service  Secondary Subscription Key
+# This will be used in case the primary subscription key does not work
+# [hex[32]] [REQUIRED]
+IAS_SECONDARY_SUBSCRIPTION_KEY = "dbd307f510ef4c0485d92f84a6f611de"
+
+#======================================================================
+[trust_policy]
+#======================================================================
+
+# This hex string should match the signer of the enclave. This is used to
+# prevents unauthorized enclaves (those from unrecognized ISVs/developers)
+# from using the remote service.
+# [hex[64]] [REQUIRED]
+POLICY_MRSIGNER = "cfbc14cebf257d8127be910afcb7c41f3120ebfa887167cc964d2b7b9f8a43ed"
+
+# [hex[64]] [REQUIRED]
+POLICY_MRENCLAVE = "48a23535cc56bfb1a7704f56a6988ae1d65a28cf20d949ccea6d9c7744cdcb40"
+
+# The product ID for the enclave. This must match the ProdId in the
+# enclave confgiruation file.
+# [uint16] [REQUIRED]
+POLICY_PRODUCT_ID = 0
+
+# The ISV software version number (ISV SVN) must be >= this value. This
+# allows service providers to enforce a minimum enclave version to utilize
+# the remote service. ISV SVN is set in the enclave configuration file.
+# [uint16] [DEFAULT = 0]
+POLICY_ISV_MIN_SVN = 1
+
+# Set to 1 to allow enclaves compiled in DEBUG mode (this sample code uses
+# debug mode). Otherwise, set to 0 to force only production (non-debuggable)
+# enclaves. A production service should never allow debug-mode enclaves.
+# [0, 1] [DEFAULT = 0]
+POLICY_ALLOW_DEBUG = true
+
+# Set to 1 to trust enclaves that receive a "CONFIGURATION_NEEDED" response from
+# IAS. Otherwise, set to 0 to reject.
+# [0, 1] [DEFAULT = 0]
+POLICY_ALLOW_CONFIGURATION_NEEDED = false
+
+#======================================================================
+[debug]
+#======================================================================
+
+# Set to non-zero for verbose output
+# [0, 1] [DEFAULT = 0]
+VERBOSE = false
+
+
+# Set to non-zero for debugging output
+# [0, 1] [DEFAULT = 0]
+DEBUG = false

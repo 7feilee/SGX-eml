@@ -75,7 +75,7 @@ void client_business(int conn_fd, sgx_enclave_id_t enclaveId) {
 
     string str = read_text_message(enclaveId, socket);
 
-    puts("/**************** Receiving App Owner's secret ****************/\n");
+    // puts("/**************** Receiving App Owner's secret ****************/\n");
 
     while (str.length() > 0) {
         printf("[%s: %4d] %s\n", "client", __LINE__, "Message coming");
@@ -85,21 +85,21 @@ void client_business(int conn_fd, sgx_enclave_id_t enclaveId) {
 }
 
 void server_business(int conn_fd, sgx_enclave_id_t enclaveId) {
-    sgx_status_t ret_status, sgx_status;
-    char p_secret[16];
+    // sgx_status_t ret_status, sgx_status;
+    // char p_secret[16];
     char buf[MESSAGE_LENGTH];
 
-    sgx_status = ecall_get_sp_secret(enclaveId, &ret_status, (uint8_t*)p_secret);
+    // sgx_status = ecall_get_sp_secret(enclaveId, &ret_status, (uint8_t*)p_secret);
 
-    if (sgx_status != SGX_SUCCESS) {
-        throw sgx_error("ecall_get_sp_secret", sgx_status);
-    }
+    // if (sgx_status != SGX_SUCCESS) {
+    //     throw sgx_error("ecall_get_sp_secret", sgx_status);
+    // }
     printf("[%s: %4d] %s\n", "server", __LINE__, "started ...");
     CodecIO socket(conn_fd);
 
-    puts("/**************** Transferring(Unsealing and Encrypting) App Owner's secret ****************/\n");
+    // puts("/**************** Transferring(Unsealing and Encrypting) App Owner's secret ****************/\n");
     
-    write_text_message(enclaveId, socket, p_secret);
+    // write_text_message(enclaveId, socket, p_secret);
 
     while (fgets(buf, MESSAGE_LENGTH, stdin)) {
         write_text_message(enclaveId, socket, buf);

@@ -134,3 +134,21 @@ sgx_status_t derive_key(key_derivation_type_t type,
 
     return status;
 }
+
+sgx_status_t get_filename(uint8_t* src, char* filename_buf) {
+    sgx_sha256_hash_t hash;
+    sgx_status_t status = SGX_SUCCESS;
+    sgx_sha256_msg(src, 64, &hash);
+
+    snprintf(filename_buf, FILENAME_BUF_LEN, "%s", BASE_FILENAME);
+
+    for(int i = 0; i < SGX_SHA256_HASH_SIZE; i++) {
+        char buf[3];
+        snprintf(buf, sizeof(buf), "%02x", hash[i]);
+        strncat(filename_buf, buf, FILENAME_BUF_LEN - strlen(filename_buf) - 1);
+    }
+
+    strncat(filename_buf, ".txt", FILENAME_BUF_LEN - strlen(filename_buf) - 1);
+    
+    return status;
+}

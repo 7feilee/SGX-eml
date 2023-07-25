@@ -72,7 +72,7 @@ int main(int argc, char const *argv[]) {
                     break;
                 }
 
-                cout << "Connected to App Owner " << client_hostname << ":" << client_port << endl;
+                cout << "Incoming connection from App Owner " << client_hostname << ":" << client_port << endl;
 
                 // spawn a new thread for each client connection
                 thread client_thread([fd, eid, &userArgs, &client_hostname, &client_port]() {
@@ -115,7 +115,7 @@ int main(int argc, char const *argv[]) {
                     continue;
                 }
 
-                cout << "Connected to App Enclave " << client_hostname << ":" << client_port << endl;
+                cout << "Incoming connection from App Enclave " << client_hostname << ":" << client_port << endl;
 
                 // spawn a new thread for each client connection
                 thread client_thread([fd, eid, &userArgs, &client_hostname, &client_port]() {
@@ -123,14 +123,14 @@ int main(int argc, char const *argv[]) {
                         server_attestation(fd, eid, userArgs);
                     }
                     
-                    const auto timeout_duration = std::chrono::seconds(10);  // 10 seconds
+                    // const auto timeout_duration = std::chrono::seconds(10);  // 10 seconds
 
-                    auto future = std::async(std::launch::async, server_business, fd, eid);
-                    if (future.wait_for(timeout_duration) == std::future_status::timeout) {
-                        std::cout << "Timeout occurred. Disconnecting..." << std::endl;
-                    } else {
-                        std::cout << "Disconnected" << std::endl;
-                    }
+                    // auto future = std::async(std::launch::async, server_business, fd, eid);
+                    // if (future.wait_for(timeout_duration) == std::future_status::timeout) {
+                    //     std::cout << "Timeout occurred. Disconnecting from " << client_hostname << ":" << client_port << endl;
+                    // } else {
+                    // cout << "Disconnected from " << client_hostname << ":" << client_port << endl;
+                    // }
 
                     Socket::disconnect(fd);
                     cout << "Disconnected from " << client_hostname << ":" << client_port << endl;
@@ -167,7 +167,7 @@ void server_attestation(int fd, sgx_enclave_id_t eid, const UserArgs &userArgs) 
     {
         TimeLog timer;
 
-        puts("/**************** Initiating Remote Attestation ... ****************/\n");
+        puts("/**************** Initiating Remote Attestation ****************/\n");
 
         IAS_Request iasRequest(userArgs.get_ias_primary_subscription_key(), userArgs.get_ias_secondary_subscription_key(),
                             userArgs.get_query_ias_production());
@@ -250,23 +250,16 @@ void server_attestation(int fd, sgx_enclave_id_t eid, const UserArgs &userArgs) 
                 hexdump(stdout, msg4_bytes.data(), msg4_bytes.size());
             }
 
-            if (msg4.status == Trusted){
+            if (msg4.status == Trusted || msg4.status == NotTrusted_Complicated){
 
-                puts("**************** Remote Attestation Succeed ****************/\n");
-                puts("\033[31m/**************** Trusted ****************/\n\033[0m");
+                puts("/**************** Remote Attestation \033[31mOK\033[0m ****************/\n");
 
-            if (userArgs.get_sgx_verbose() && userArgs.get_sgx_debug()) {
-                puts("/**************** Getting sp's secret ****************/\n");
-            }
+                puts("/**************** Deriving ECDH key ****************/\n");
 
-            puts("/**************** Getting(Unsealing) App Owner's secret ****************/\n");
-            auto sp_secret = spAttEnclave.get_sp_secret();
-            hexdump(stdout, sp_secret.data(), sp_secret.size());
-
-            puts("/**************** Hashing Ephemeral elliptic curve Diffie-Hellman key ...  ****************/\n");
-
-            auto key_hash = spAttEnclave.generate_key();
-            hexdump(stdout, key_hash.data(), key_hash.size());
+                auto key_hash = spAttEnclave.generate_key();
+                // hexdump(stdout, key_hash.data(), key_hash.size());
+            
+                puts("/**************** Sending App Owner's secret ****************/\n");
             }
         }
         cout << "Remote Attestation ";
@@ -280,8 +273,7 @@ void client_attestation(int fd, sgx_enclave_id_t eid, const UserArgs &userArgs) 
     {
         TimeLog timer;
         
-        puts("/**************** Initiating Remote Attestation ... ****************/\n");
-
+        puts("/**************** Initiating Remote Attestation ****************/\n");
 
         {
             /**************** Generate message 0 and 1 ****************/
@@ -336,22 +328,24 @@ void client_attestation(int fd, sgx_enclave_id_t eid, const UserArgs &userArgs) 
         hexdump(stdout, msg4_bytes.data(), msg4_bytes.size());
     }
 
-    if (msg4.status == Trusted) {
+    if (msg4.status == Trusted || msg4.status == NotTrusted_Complicated) {
         unique_lock lock(ra_status_mutex);
         ra_status = true;
-        puts("**************** Remote Attestation Succeed ****************/\n");
-        puts("\033[31m/**************** Trusted ****************/\n\033[0m");
+        puts("/**************** Remote Attestation \033[31mOK\033[0m ****************/\n");
 
-    if (userArgs.get_sgx_verbose() && userArgs.get_sgx_debug()) {
-        puts("/**************** Saving sp's secret ****************/\n");
-    }
-        puts("/**************** Sealing App Owner's secret ****************/\n");
+        puts("/**************** Deriving ECDH key ****************/\n");
+
+        auto key_hash = isvAttEnclave.generate_key();
+        // hexdump(stdout, key_hash.data(), key_hash.size());
+
+        puts("/**************** Receiving App Owner's secret, App Enclave's MRSIGNER, MRENCLAVE ****************/\n");
+            
+        puts("/**************** Sealing App Owner's secret, App Enclave's MRSIGNER, MRENCLAVE ****************/\n");
 
         isvAttEnclave.save_secret(msg4.secret.payload, msg4.secret.payload_tag);
-        
+            
     }else{
-        puts("**************** Remote Attestation Failed ****************/\n");
-        puts("\033[31m/**************** UNTRUST ****************/\n\033[0m");
+        puts("/**************** Remote Attestation Failed ****************/\n");
 
         unique_lock lock(ra_status_mutex);
         ra_status = false;

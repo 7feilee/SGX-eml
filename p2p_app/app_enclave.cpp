@@ -48,9 +48,9 @@ int main(int argc, char const *argv[]) {
         cout << "Connected to EML " << host << ":" << port << endl;
 
         client_attestation(socket.get_file_decriptor(), eid, userArgs);
-        client_business(socket.get_file_decriptor(), eid);
+        // client_business(socket.get_file_decriptor(), eid);
 
-        cout << "Disconnecting ... " << endl;
+        cout << "Disconnecting from " << host << ":" << port << endl;
         return 0;
     }
 
@@ -71,7 +71,7 @@ void client_attestation(int fd, sgx_enclave_id_t eid, const UserArgs &userArgs) 
     {
         TimeLog timer;
 
-        puts("/**************** Initiating Remote Attestation ... ****************/\n");
+        puts("/**************** Initiating Remote Attestation ****************/\n");
 
         {
             /**************** Generate message 0 and 1 ****************/
@@ -122,20 +122,24 @@ void client_attestation(int fd, sgx_enclave_id_t eid, const UserArgs &userArgs) 
 
     /**************** Receive message 4 ****************/
     bytes msg4_bytes = codecIo.read();
-    const ra_msg4_t &msg4 = *(ra_msg4_t *) msg4_bytes.data();
+    ra_msg4_t &msg4 = *(ra_msg4_t *) msg4_bytes.data();
 
     if (userArgs.get_sgx_verbose() && userArgs.get_sgx_debug()) {
         puts("/**************** Receive message 4 ****************/\n");
         hexdump(stdout, msg4_bytes.data(), msg4_bytes.size());
     }
 
-    if (msg4.status == Trusted) {
-        puts("**************** Remote Attestation Succeed ****************/\n");
-        puts("\033[31m/**************** Trusted ****************/\n\033[0m");
+    if (msg4.status == Trusted || msg4.status == NotTrusted_Complicated) {
+        puts("/**************** Remote Attestation \033[31mOK\033[0m ****************/\n");
 
-        puts("/**************** Hashing Ephemeral elliptic curve Diffie-Hellman key ...  ****************/\n");
+        puts("/**************** Deriving ECDH key ****************/\n");
 
         auto key_hash = isvAttEnclave.generate_key();
-        hexdump(stdout, key_hash.data(), key_hash.size());
+        // hexdump(stdout, key_hash.data(), key_hash.size());
+
+        puts("/**************** Receving App Owner's secret ****************/\n");
+
+        isvAttEnclave.get_secret(msg4.secret.payload, msg4.secret.payload_tag);
+        hexdump(stdout, msg4.secret.payload, 16);
     }
 }

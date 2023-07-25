@@ -56,6 +56,7 @@ public:
         policy.isv_product_id = user_args.get_policy_product_id();
         policy.isv_min_svn = user_args.get_policy_isv_min_svn();
         memcpy(&policy.mrsigner, user_args.get_policy_mrsigner().data(), sizeof(sgx_measurement_t));
+        memcpy(&policy.mrenclave, user_args.get_policy_mrenclave().data(), sizeof(sgx_measurement_t));
 
         spid = user_args.get_spid();
         quote_type = user_args.get_quote_type();
@@ -251,20 +252,9 @@ public:
         ra_msg4_t &msg4 = *(ra_msg4_t *) msg4_bytes.data();
         memset(&msg4, 0, sizeof(ra_msg4_t));
 
-        puts("/**************** Getting Remote Attestation Result ... ****************/\n");
-
         string isvEnclaveQuoteStatus = reportObj["isvEnclaveQuoteStatus"].ToString();
-        if (isvEnclaveQuoteStatus == "OK" || isvEnclaveQuoteStatus == "GROUP_OUT_OF_DATE") {
-
-            puts("\033[31m/**************** Trusted ****************/\n\033[0m");
-
+        if (isvEnclaveQuoteStatus == "OK") {
             msg4.status = Trusted;
-            puts("/**************** Ephemeral elliptic curve Diffie-Hellman key deriving DERIVE_KEY_SK ...  ****************/\n");
-            if(!derive_key(DERIVE_KEY_SK, secret.shared_secret, secret.sk))
-                throw sgx_error("call_sp_proc_msg01 <att: Failed to derive SK>", SGX_ERROR_UNEXPECTED);
-            uint8_t aes_gcm_iv[12] = {0};
-            puts("/**************** Encrypting and Sending the secret ... ****************/\n");
-            aes_gcm_encrypt(secret.sk, (uint8_t*)msg, 16, msg4.secret.payload, &aes_gcm_iv[0], 12, NULL, 0, msg4.secret.payload_tag);
         } else if (isvEnclaveQuoteStatus == "CONFIGURATION_NEEDED") {
             msg4.status = policy.allow_configuration_needed ? Trusted_Complicated : NotTrusted_Complicated;
         } else if (isvEnclaveQuoteStatus == "GROUP_OUT_OF_DATE") {
@@ -274,6 +264,13 @@ public:
         }
 
         if (msg4.status == Trusted || msg4.status == NotTrusted_Complicated) {
+
+            puts("/**************** Remote Attestation \033[31mOK\033[0m ****************/\n");
+            puts("/**************** Deriving ECDH key ****************/\n");
+
+            if(!derive_key(DERIVE_KEY_SK, secret.shared_secret, secret.sk))
+                throw sgx_error("call_sp_proc_msg01 <att: Failed to derive SK>", SGX_ERROR_UNEXPECTED);
+            
             string isvEnclaveQuoteBody = reportObj["isvEnclaveQuoteBody"].ToString();
             vector<uint8_t> quote_bytes = base64_decode(isvEnclaveQuoteBody);
             const sgx_quote_t &quote = *(sgx_quote_t *) quote_bytes.data();
@@ -293,16 +290,23 @@ public:
                 printf("%s [%4d] %s : %s\n", __FILE__, __LINE__, __FUNCTION__,  "isv_svn");
             } else if (memcmp(&report_body.mr_signer, &policy.mrsigner, sizeof(sgx_measurement_t)) != 0) {
                 // Does the MRSIGNER match?
-                
                 msg4.status = NotTrusted;
                 printf("%s [%4d] %s : %s\n", __FILE__, __LINE__, __FUNCTION__,  "isv_mrsigner");
+            }else if (memcmp(&report_body.mr_enclave, &policy.mrenclave, sizeof(sgx_measurement_t)) != 0) {
+                // Does the MRENCLAVE match?
+                msg4.status = NotTrusted;
+                printf("%s [%4d] %s : %s\n", __FILE__, __LINE__, __FUNCTION__,  "isv_mrenclave");
             }
-            sgx_measurement_t mrenclave = report_body.mr_enclave;
-            
-            for (int i = 0; i < 32; ++i) {
-                printf("%02x", mrenclave.m[i]);
-            }
-            printf("\n");
+        }
+
+        if(msg4.status != NotTrusted){
+            uint8_t aes_gcm_iv[12] = {0};
+            puts("/**************** Sending App Owner's secret, App Enclave's MRSIGNER, MRENCLAVE ****************/\n");
+            uint8_t src[16 + 32 + 32];
+            memcpy(src, msg, 16);
+            memcpy(src + 16, policy.mrsigner.m, 32);
+            memcpy(src + 16 + 32, policy.mrenclave.m, 32);
+            aes_gcm_encrypt(secret.sk, (uint8_t*)src, SAMPLE_PAYLOAD_SIZE, msg4.secret.payload, &aes_gcm_iv[0], 12, NULL, 0, msg4.secret.payload_tag);
         }
 
         #if 0

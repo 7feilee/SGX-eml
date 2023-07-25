@@ -24,7 +24,7 @@ in the License.
 #include "error.h"
 
 #define SAMPLE_SP_TAG_SIZE          16
-#define SAMPLE_PAYLOAD_SIZE          16
+#define SAMPLE_PAYLOAD_SIZE         80 // SECRET|MRSIGNER|MRENCLAVE
 
 typedef struct _ra_msg01_t_struct {
     uint32_t msg0_extended_epid_group_id;
@@ -34,10 +34,10 @@ typedef struct _ra_msg01_t_struct {
 
 typedef struct sp_aes_gcm_data_t {
     uint8_t         payload_tag[SAMPLE_SP_TAG_SIZE];
-                                        /* 0: AES-GMAC of the plain text,*/
-                                        /*     payload, and the sizes*/
-    uint8_t         payload[SAMPLE_PAYLOAD_SIZE];          /* 16: Ciphertext of the payload*/
-                                        /*     followed by the plain text*/
+                                                /* 0: AES-GMAC of the plain text,*/
+                                                /*     payload, and the sizes*/
+    uint8_t         payload[SAMPLE_PAYLOAD_SIZE];/* 16: Ciphertext of the payload*/
+                                                /*      followed by the plain text*/
 } sp_aes_gcm_data_t;
 
 

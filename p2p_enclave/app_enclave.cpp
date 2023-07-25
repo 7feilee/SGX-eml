@@ -4,6 +4,8 @@
 #include "sp_routines.h"
 #include <cstdio>
 #include <cstring>
+#include <string> 
+
 #include "utils/crypto_utils.h"
 
 #define COUNTER_LENGTH_IN_BYTES 16
@@ -11,7 +13,6 @@
 using namespace std;
 extern ra_secret_t secret;
 sgx_ec_key_128bit_t final_key;
-static const char* filename = "sp_secret.txt";
 
 sgx_status_t ecall_isv_init_share_key(sgx_ra_context_t ctx, sgx_sha256_hash_t *hash) {
     sgx_status_t status = SGX_SUCCESS;
@@ -78,7 +79,7 @@ sgx_status_t aes_ctr_128_decrypt(uint8_t *buffer, uint32_t length, uint8_t nonce
     return status;
 }
 
-sgx_status_t write_secret_to_file(const char* filename, unsigned char* secret, size_t secret_len) {
+sgx_status_t write_secret_to_file(char* filename, unsigned char* secret, size_t secret_len) {
     SGX_FILE* fp = sgx_fopen(filename, "w", NULL);
     if (fp == NULL) {
         return SGX_ERROR_UNEXPECTED;
@@ -94,7 +95,7 @@ sgx_status_t write_secret_to_file(const char* filename, unsigned char* secret, s
     return SGX_SUCCESS;
 }
 
-sgx_status_t ecall_isv_put_secret(sgx_ra_context_t context, const uint8_t* p_secret, const uint8_t* p_gcm_mac){
+sgx_status_t ecall_app_put_secret(sgx_ra_context_t context, const uint8_t* p_secret, const uint8_t* p_gcm_mac){
     sgx_status_t status = SGX_SUCCESS;
     sgx_ec_key_128bit_t sk_key;
     uint8_t* g_secret = (uint8_t*) malloc(SAMPLE_PAYLOAD_SIZE);
@@ -114,29 +115,32 @@ sgx_status_t ecall_isv_put_secret(sgx_ra_context_t context, const uint8_t* p_sec
                                         (p_gcm_mac));
     
     check_sgx_status(status);
-
-    status = write_secret_to_file(filename, g_secret, SAMPLE_PAYLOAD_SIZE);
+    char filename_buf[FILENAME_BUF_LEN];
+    status = get_filename(&g_secret[16], filename_buf);
+    check_sgx_status(status);
+    status = write_secret_to_file(filename_buf, g_secret, SAMPLE_PAYLOAD_SIZE);
     check_sgx_status(status);
     memset((void *) g_secret, 0, SAMPLE_PAYLOAD_SIZE);
-
     return status;
 }
 
-sgx_status_t ecall_get_sp_secret(uint8_t* p_secret){
-    SGX_FILE* fp = sgx_fopen_auto_key(filename, "rb");
+sgx_status_t ecall_app_get_secret(sgx_ra_context_t context, uint8_t* p_secret, const uint8_t *p_gcm_mac){
+    sgx_status_t status = SGX_SUCCESS;
+    sgx_ec_key_128bit_t sk_key;
+    status = sgx_ra_get_keys(context, SGX_RA_KEY_SK, &sk_key);
+    check_sgx_status(status);
+    uint8_t aes_gcm_iv[12] = {0};
+    
+    status = sgx_rijndael128GCM_decrypt(&sk_key,
+                                        p_secret,
+                                        SAMPLE_PAYLOAD_SIZE,
+                                        p_secret,
+                                        &aes_gcm_iv[0],
+                                        12,
+                                        NULL,
+                                        0,
+                                        (const sgx_aes_gcm_128bit_tag_t *)
+                                        (p_gcm_mac));
 
-    if (fp == NULL) {
-        return SGX_ERROR_UNEXPECTED;
-    }
-
-    // Assuming the file contains exactly 16 bytes.
-    size_t readsize = sgx_fread(p_secret, 1, 16, fp);
-
-    sgx_fclose(fp);
-
-    if (readsize != 16) {
-        return SGX_ERROR_UNEXPECTED;
-    }
-
-    return SGX_SUCCESS;
+    return status;
 }

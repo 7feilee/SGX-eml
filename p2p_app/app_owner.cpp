@@ -46,7 +46,7 @@ int main(int argc, char const *argv[]) {
 
         server_attestation(socket.get_file_decriptor(), userArgs);
 
-        cout << "Disconnecting ... " << endl;
+        cout << "Disconnecting from " << host << ":" << port << endl;
 
         return 0;
     }
@@ -68,7 +68,7 @@ void server_attestation(int fd, const UserArgs &userArgs) {
     CodecIO codecIo(fd);
     sp_att spAtt(userArgs);
 
-    puts("/**************** Initiating Remote Attestation ... ****************/\n");
+    puts("/**************** Initiating Remote Attestation ****************/\n");
 
     IAS_Request iasRequest(userArgs.get_ias_primary_subscription_key(), userArgs.get_ias_secondary_subscription_key(),
                            userArgs.get_query_ias_production());
@@ -144,9 +144,6 @@ void server_attestation(int fd, const UserArgs &userArgs) {
         }
 
         codecIo.write(msg4_bytes);
-        const ra_msg4_t &msg4 = *(ra_msg4_t *) msg4_bytes.data();
-        if(msg4.status == Trusted)
-            puts("/**************** Secret sent ****************/\n");
 
     }
     cout << "Remote Attestation ";

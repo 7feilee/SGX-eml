@@ -24,7 +24,6 @@ public:
         policy.allow_configuration_needed = user_args.get_policy_allow_configuration_needed();
         policy.isv_product_id = user_args.get_policy_product_id();
         policy.isv_min_svn = user_args.get_policy_isv_min_svn();
-        memcpy(&policy.mrsigner, user_args.get_policy_mrsigner().data(), sizeof(sgx_measurement_t));
 
         spid = user_args.get_spid();
         quote_type = user_args.get_quote_type();
@@ -92,17 +91,6 @@ public:
         }
 
         return key_hash;
-    }
-
-    const array<uint8_t, 16> &get_sp_secret() {
-        sgx_status_t ret_status, sgx_status;
-        sgx_status = ecall_get_sp_secret(eid, &ret_status, sp_secret.data());
-
-        if (sgx_status != SGX_SUCCESS) {
-            throw sgx_error("ecall_get_sp_secret", sgx_status);
-        }
-
-        return sp_secret;
     }
 
 };

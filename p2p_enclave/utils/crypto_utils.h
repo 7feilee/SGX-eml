@@ -6,6 +6,9 @@
 #include <cstring>
 #include <vector>
 
+#define BASE_FILENAME "enclave_"
+#define FILENAME_BUF_LEN 100
+
 enum key_derivation_type_t {
     DERIVE_KEY_SMK,
     DERIVE_KEY_SK,
@@ -31,6 +34,8 @@ sgx_status_t ecdsa(const sgx_ec256_private_t &privkey,
 sgx_status_t derive_key(key_derivation_type_t type,
                         const sgx_ec256_dh_shared_t &shared_secret,
                         sgx_cmac_128bit_key_t &derived_key);
+
+sgx_status_t get_filename(uint8_t* src, char* filename_buf);
 
 
 #endif //SGX_EML_CRYPTO_UTILS_H
