@@ -20,7 +20,7 @@ $ make
 
 Before running the EML, configure the file in the `build/config` folder as follows:
 
-- Provide `SPID`, `IAS_PRIMARY_SUBSCRIPTION_KEY`, and `IAS_SECONDARY_SUBSCRIPTION_KEY` from the Intel API portal in `app_owner_config.toml`, `eml_config.toml`.
+- Provide `SPID`, `IAS_PRIMARY_SUBSCRIPTION_KEY`, and `IAS_SECONDARY_SUBSCRIPTION_KEY` from the [Intel API portal](https://api.portal.trustedservices.intel.com/EPID-attestation) in `app_owner_config.toml`, `eml_config.toml`.
 - Update `POLICY_MRSIGNER` and `POLICY_MRENCLAVE` value in `app_owner_config.toml` with the corresponding value from the MAKE output console.
 
 ## Execution
