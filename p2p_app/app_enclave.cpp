@@ -51,6 +51,8 @@ int main(int argc, char const *argv[]) {
         // client_business(socket.get_file_decriptor(), eid);
 
         cout << "Disconnecting from " << host << ":" << port << endl;
+
+        
         return 0;
     }
 
@@ -137,9 +139,9 @@ void client_attestation(int fd, sgx_enclave_id_t eid, const UserArgs &userArgs) 
         auto key_hash = isvAttEnclave.generate_key();
         // hexdump(stdout, key_hash.data(), key_hash.size());
 
-        puts("/**************** Receving App Owner's secret ****************/\n");
+        puts("/**************** Receving App Owner's sk ****************/\n");
 
         isvAttEnclave.get_secret(msg4.secret.payload, msg4.secret.payload_tag);
-        hexdump(stdout, msg4.secret.payload, 16);
+        hexdump(stdout, msg4.secret.payload, 256);
     }
 }

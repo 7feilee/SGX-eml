@@ -58,11 +58,11 @@ enclave {
         public sgx_status_t aes_ctr_128_decrypt([in, out, count=length] uint8_t *buffer, uint32_t length, [in]uint8_t nonce[16]);
 
         public sgx_status_t ecall_app_put_secret(sgx_ra_context_t context,  
-                                            [in,count=80]const uint8_t* p_secret,
+                                            [in,count=320]const uint8_t* p_secret,
                                             [in,count=16]const uint8_t* p_gcm_mac);
 
         public sgx_status_t ecall_app_get_secret(sgx_ra_context_t context,
-                                            [in, out, count=16] uint8_t* p_secret,
+                                            [in, out, count=256] uint8_t* p_secret,
                                             [in,count=16]const uint8_t* p_gcm_mac);
 
 	};

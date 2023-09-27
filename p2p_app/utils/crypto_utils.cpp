@@ -20,8 +20,63 @@ void crypto_destroy ()
 	ERR_free_strings();
 }
 
+bool generateRSAKeyPair(const char* publicKeyFile, std::vector<uint8_t>& privateKeyBytes) {
+    RSA* rsa = RSA_generate_key(2048, RSA_F4, nullptr, nullptr);
+    if (!rsa) {
+        return false;
+    }
+
+    // Get the private key in PEM format
+    BIO* privateKeyBio = BIO_new(BIO_s_mem());
+    if (!privateKeyBio) {
+        return false;
+    }
+
+    if (PEM_write_bio_RSAPrivateKey(privateKeyBio, rsa, nullptr, nullptr, 0, 0, nullptr) != 1) {
+        return false;
+    }
+
+    // Save the public key to a file
+    BIO* publicKeyBio = BIO_new(BIO_s_mem());
+    if (!publicKeyBio) {
+        return false;
+    }
+
+    if (PEM_write_bio_RSAPublicKey(publicKeyBio, rsa) != 1) {
+        return false;
+    }
+
+    std::ofstream publicKeyStream(publicKeyFile);
+    if (!publicKeyStream) {
+        return false;
+    }
+
+    char buffer[1024];
+    int bytesRead;
+    while ((bytesRead = BIO_read(publicKeyBio, buffer, sizeof(buffer))) > 0) {
+        publicKeyStream.write(buffer, bytesRead);
+    }
+
+    publicKeyStream.close();
+
+    // Store the private key in a uint8_t vector
+    const BIGNUM* bn = RSA_get0_n(rsa);
+    int rsa_size = RSA_size(rsa);
+    privateKeyBytes.resize(rsa_size);
+
+    if (BN_bn2bin(bn, privateKeyBytes.data()) <= 0) {
+        return false;
+    }
+
+    // Clean up
+    RSA_free(rsa);
+    BIO_free(privateKeyBio);
+    BIO_free(publicKeyBio);
+
+    return true;
+}
+
 bool key_verify(const sgx_ec256_public_t& pubkey) {
-    bool valid = false;
     EC_GROUP* curve = nullptr;
     EC_POINT* pub_point = nullptr;
     BIGNUM* bn_x = nullptr;

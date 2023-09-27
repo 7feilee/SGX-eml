@@ -5,6 +5,7 @@
 #include <openssl/cmac.h>
 #include <openssl/conf.h>
 #include <openssl/ec.h>
+#include <openssl/rsa.h>
 #include <openssl/ecdsa.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
@@ -14,6 +15,7 @@
 #include <openssl/x509v3.h>
 #include <vector>
 #include <algorithm>
+#include <fstream>
 
 enum key_derivation_type_t {
     DERIVE_KEY_SMK,
@@ -79,6 +81,9 @@ int aes_gcm_decrypt(uint8_t *key,
                     uint8_t *aad,
                     int aad_len,
                     uint8_t *tag);
+
+bool generateRSAKeyPair(const char* publicKeyFile,
+                std::vector<uint8_t>& privateKeyBytes);
 
 
 #endif //SGX_EML_CRYPTO_UTILS_H

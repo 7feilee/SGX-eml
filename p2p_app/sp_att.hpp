@@ -22,11 +22,6 @@ class sp_att {
             }
     };
 
-    const unsigned char msg[16] = {
-        'd', 'e', 'a', 'd', 'b', 'e', 'e', 'f',
-        'd', 'e', 'a', 'd', 'b', 'e', 'e', 'f'
-    };
-
     typedef struct ra_secret_struct {
         sgx_ec256_private_t private_b;
         sgx_ec256_public_t public_b;
@@ -145,7 +140,7 @@ public:
         return msg2_bytes;
     }
 
-    const vector<uint8_t> &process_msg3(const vector<uint8_t> &msg3_bytes, const string &attestation_report) {
+    const vector<uint8_t> &process_msg3(const vector<uint8_t> &msg3_bytes, const vector<uint8_t> &privateKeyBytes, const string &attestation_report) {
         sgx_status_t sgx_status, ret_status;
         attestation_error_t att_error;
 
@@ -301,11 +296,12 @@ public:
 
         if(msg4.status != NotTrusted){
             uint8_t aes_gcm_iv[12] = {0};
-            puts("/**************** Sending App Owner's secret, App Enclave's MRSIGNER, MRENCLAVE ****************/\n");
-            uint8_t src[16 + 32 + 32];
-            memcpy(src, msg, 16);
-            memcpy(src + 16, policy.mrsigner.m, 32);
-            memcpy(src + 16 + 32, policy.mrenclave.m, 32);
+            puts("/**************** Sending App Owner's sk, App Enclave's MRSIGNER, MRENCLAVE ****************/\n");
+            uint8_t src[256 + 32 + 32];
+            memcpy(src, privateKeyBytes.data(), 256);
+            memcpy(src + 256, policy.mrsigner.m, 32);
+            memcpy(src + 256 + 32, policy.mrenclave.m, 32);
+            
             aes_gcm_encrypt(secret.sk, (uint8_t*)src, SAMPLE_PAYLOAD_SIZE, msg4.secret.payload, &aes_gcm_iv[0], 12, NULL, 0, msg4.secret.payload_tag);
         }
 

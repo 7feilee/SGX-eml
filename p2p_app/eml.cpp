@@ -259,7 +259,7 @@ void server_attestation(int fd, sgx_enclave_id_t eid, const UserArgs &userArgs) 
                 auto key_hash = spAttEnclave.generate_key();
                 // hexdump(stdout, key_hash.data(), key_hash.size());
             
-                puts("/**************** Sending App Owner's secret ****************/\n");
+                puts("/**************** Sending App Owner's sk ****************/\n");
             }
         }
         cout << "Remote Attestation ";
@@ -338,9 +338,9 @@ void client_attestation(int fd, sgx_enclave_id_t eid, const UserArgs &userArgs) 
         auto key_hash = isvAttEnclave.generate_key();
         // hexdump(stdout, key_hash.data(), key_hash.size());
 
-        puts("/**************** Receiving App Owner's secret, App Enclave's MRSIGNER, MRENCLAVE ****************/\n");
+        puts("/**************** Receiving App Owner's sk, App Enclave's MRSIGNER, MRENCLAVE ****************/\n");
             
-        puts("/**************** Sealing App Owner's secret, App Enclave's MRSIGNER, MRENCLAVE ****************/\n");
+        puts("/**************** Sealing App Owner's sk, App Enclave's MRSIGNER, MRENCLAVE ****************/\n");
 
         isvAttEnclave.save_secret(msg4.secret.payload, msg4.secret.payload_tag);
             

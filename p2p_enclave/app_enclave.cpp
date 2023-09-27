@@ -116,7 +116,7 @@ sgx_status_t ecall_app_put_secret(sgx_ra_context_t context, const uint8_t* p_sec
     
     check_sgx_status(status);
     char filename_buf[FILENAME_BUF_LEN];
-    status = get_filename(&g_secret[16], filename_buf);
+    status = get_filename(&g_secret[256], filename_buf);
     check_sgx_status(status);
     status = write_secret_to_file(filename_buf, g_secret, SAMPLE_PAYLOAD_SIZE);
     check_sgx_status(status);
@@ -133,7 +133,7 @@ sgx_status_t ecall_app_get_secret(sgx_ra_context_t context, uint8_t* p_secret, c
     
     status = sgx_rijndael128GCM_decrypt(&sk_key,
                                         p_secret,
-                                        SAMPLE_PAYLOAD_SIZE,
+                                        SAMPLE_PAYLOAD_SIZE - 32 - 32,
                                         p_secret,
                                         &aes_gcm_iv[0],
                                         12,
