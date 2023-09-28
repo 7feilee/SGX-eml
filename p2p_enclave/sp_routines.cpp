@@ -220,7 +220,7 @@ sgx_status_t private_build_msg4(ra_secret_t &secret, const string &attestation_r
         msg4.status = NotTrusted;
     }
 
-    uint8_t src[256 + 32 + 32];
+    uint8_t src[4096 + 32 + 32];
 
     if (msg4.status == Trusted || msg4.status == NotTrusted_Complicated) {
         string isvEnclaveQuoteBody = reportObj["isvEnclaveQuoteBody"].ToString();
@@ -228,11 +228,11 @@ sgx_status_t private_build_msg4(ra_secret_t &secret, const string &attestation_r
         const sgx_quote_t &quote = *(sgx_quote_t *) quote_bytes.data();
         const sgx_report_body_t &report_body = quote.report_body;
         int rv = 0;
-        ocall_fputs(&rv, TO_STDOUT, "/**************** Unsealing App Owner's sk, App Enclave's MRSIGNER, MRENCLAVE ****************/\n");
+        ocall_fputs(&rv, TO_STDOUT, "/**************** Unsealing App's sk, App Enclave's MRSIGNER, MRENCLAVE ****************/\n");
         char filename_buf[FILENAME_BUF_LEN];
-        memcpy(src + 256, &report_body.mr_signer, 32);
-        memcpy(src + 256 + 32, &report_body.mr_enclave, 32);
-        status = get_filename(&src[256], filename_buf);
+        memcpy(src + 4096, &report_body.mr_signer, 32);
+        memcpy(src + 4096 + 32, &report_body.mr_enclave, 32);
+        status = get_filename(&src[4096], filename_buf);
         check_sgx_status(status);
 
         SGX_FILE* fp = sgx_fopen_auto_key(filename_buf, "rb");
@@ -260,11 +260,11 @@ sgx_status_t private_build_msg4(ra_secret_t &secret, const string &attestation_r
             // Does the ISV SVN meet the minimum version?
             msg4.status = NotTrusted;
             ocall_eputs(__FILE__, __FUNCTION__, __LINE__, "isv_svn");
-        } else if (memcmp(&report_body.mr_signer, &src[256], sizeof(sgx_measurement_t)) != 0) {
+        } else if (memcmp(&report_body.mr_signer, &src[4096], sizeof(sgx_measurement_t)) != 0) {
             // Does the MRSIGNER match?
            msg4.status = NotTrusted;
            ocall_eputs(__FILE__, __FUNCTION__, __LINE__, "isv_mr_signer");
-        } else if (memcmp(&report_body.mr_enclave, &src[256 + 32], sizeof(sgx_measurement_t)) != 0) {
+        } else if (memcmp(&report_body.mr_enclave, &src[4096 + 32], sizeof(sgx_measurement_t)) != 0) {
             // Does the MRENCLAVE match?
            msg4.status = NotTrusted;
            ocall_eputs(__FILE__, __FUNCTION__, __LINE__, "isv_mr_enclave");

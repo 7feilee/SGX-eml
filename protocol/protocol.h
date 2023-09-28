@@ -24,7 +24,7 @@ in the License.
 #include "error.h"
 
 #define SAMPLE_SP_TAG_SIZE          16
-#define SAMPLE_PAYLOAD_SIZE         320 // SECRET|MRSIGNER|MRENCLAVE
+#define SAMPLE_PAYLOAD_SIZE         4160 // SECRET|MRSIGNER|MRENCLAVE
 
 typedef struct _ra_msg01_t_struct {
     uint32_t msg0_extended_epid_group_id;

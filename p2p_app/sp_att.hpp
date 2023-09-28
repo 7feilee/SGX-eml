@@ -296,12 +296,12 @@ public:
 
         if(msg4.status != NotTrusted){
             uint8_t aes_gcm_iv[12] = {0};
-            puts("/**************** Sending App Owner's sk, App Enclave's MRSIGNER, MRENCLAVE ****************/\n");
-            uint8_t src[256 + 32 + 32];
-            memcpy(src, privateKeyBytes.data(), 256);
-            memcpy(src + 256, policy.mrsigner.m, 32);
-            memcpy(src + 256 + 32, policy.mrenclave.m, 32);
-            
+            puts("/**************** Sending App's sk, App Enclave's MRSIGNER, MRENCLAVE ****************/\n");
+            uint8_t src[4096 + 32 + 32];
+            memcpy(src, privateKeyBytes.data(), 4096);
+            memcpy(src + 4096, policy.mrsigner.m, 32);
+            memcpy(src + 4096 + 32, policy.mrenclave.m, 32);
+
             aes_gcm_encrypt(secret.sk, (uint8_t*)src, SAMPLE_PAYLOAD_SIZE, msg4.secret.payload, &aes_gcm_iv[0], 12, NULL, 0, msg4.secret.payload_tag);
         }
 

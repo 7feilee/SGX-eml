@@ -26,52 +26,33 @@ bool generateRSAKeyPair(const char* publicKeyFile, std::vector<uint8_t>& private
         return false;
     }
 
-    // Get the private key in PEM format
-    BIO* privateKeyBio = BIO_new(BIO_s_mem());
-    if (!privateKeyBio) {
+    BIO* BioPublic = BIO_new_file(publicKeyFile, "w+");
+    
+    if (PEM_write_bio_RSAPublicKey(BioPublic, rsa) != 1) {
         return false;
     }
 
-    if (PEM_write_bio_RSAPrivateKey(privateKeyBio, rsa, nullptr, nullptr, 0, 0, nullptr) != 1) {
-        return false;
-    }
+    BIO* BioPrivate = BIO_new(BIO_s_mem());
 
-    // Save the public key to a file
-    BIO* publicKeyBio = BIO_new(BIO_s_mem());
-    if (!publicKeyBio) {
-        return false;
-    }
+	int Result = PEM_write_bio_RSAPrivateKey(BioPrivate, rsa, nullptr, nullptr, 0, nullptr, nullptr);
 
-    if (PEM_write_bio_RSAPublicKey(publicKeyBio, rsa) != 1) {
-        return false;
-    }
+	if (Result != 1)
+	{
+		BIO_free_all(BioPrivate);
+		return false;
+	}
+    privateKeyBytes.resize(4096);
 
-    std::ofstream publicKeyStream(publicKeyFile);
-    if (!publicKeyStream) {
-        return false;
-    }
+	int BytesRead = BIO_read(BioPrivate, privateKeyBytes.data(), (int)privateKeyBytes.size());
+	if (BytesRead <= 0)
+	{
+		BIO_free_all(BioPrivate);
+		return false;
+	}
 
-    char buffer[1024];
-    int bytesRead;
-    while ((bytesRead = BIO_read(publicKeyBio, buffer, sizeof(buffer))) > 0) {
-        publicKeyStream.write(buffer, bytesRead);
-    }
-
-    publicKeyStream.close();
-
-    // Store the private key in a uint8_t vector
-    const BIGNUM* bn = RSA_get0_n(rsa);
-    int rsa_size = RSA_size(rsa);
-    privateKeyBytes.resize(rsa_size);
-
-    if (BN_bn2bin(bn, privateKeyBytes.data()) <= 0) {
-        return false;
-    }
-
-    // Clean up
     RSA_free(rsa);
-    BIO_free(privateKeyBio);
-    BIO_free(publicKeyBio);
+	BIO_free_all(BioPrivate);
+    BIO_free_all(BioPublic);
 
     return true;
 }

@@ -4,7 +4,6 @@
 #include "config.h"
 #include "protocol.h"
 #include "socket.hpp"
-#include "timelog.hpp"
 #include "codec_io.hpp"
 #include "isv_att_enclave.hpp"
 #include "sp_att_enclave.hpp"
@@ -165,7 +164,6 @@ void server_attestation(int fd, sgx_enclave_id_t eid, const UserArgs &userArgs) 
     sp_att_enclave spAttEnclave(eid, userArgs);
     
     {
-        TimeLog timer;
 
         puts("/**************** Initiating Remote Attestation ****************/\n");
 
@@ -259,10 +257,9 @@ void server_attestation(int fd, sgx_enclave_id_t eid, const UserArgs &userArgs) 
                 auto key_hash = spAttEnclave.generate_key();
                 // hexdump(stdout, key_hash.data(), key_hash.size());
             
-                puts("/**************** Sending App Owner's sk ****************/\n");
+                puts("/**************** Sending App's sk ****************/\n");
             }
         }
-        cout << "Remote Attestation ";
     }
 
 }
@@ -270,9 +267,7 @@ void server_attestation(int fd, sgx_enclave_id_t eid, const UserArgs &userArgs) 
 void client_attestation(int fd, sgx_enclave_id_t eid, const UserArgs &userArgs) {
     CodecIO codecIo(fd);
     isv_att_enclave isvAttEnclave(eid, userArgs);
-    {
-        TimeLog timer;
-        
+    {        
         puts("/**************** Initiating Remote Attestation ****************/\n");
 
         {
@@ -316,7 +311,6 @@ void client_attestation(int fd, sgx_enclave_id_t eid, const UserArgs &userArgs) 
                 fprintf(stderr, "%s [%4d] %s\n", __FILE__, __LINE__, __FUNCTION__);
             } 
         }
-        cout << "Remote Attestation ";
     }
 
     /**************** Receive message 4 ****************/
@@ -338,9 +332,9 @@ void client_attestation(int fd, sgx_enclave_id_t eid, const UserArgs &userArgs) 
         auto key_hash = isvAttEnclave.generate_key();
         // hexdump(stdout, key_hash.data(), key_hash.size());
 
-        puts("/**************** Receiving App Owner's sk, App Enclave's MRSIGNER, MRENCLAVE ****************/\n");
+        puts("/**************** Receiving App's sk, App Enclave's MRSIGNER, MRENCLAVE ****************/\n");
             
-        puts("/**************** Sealing App Owner's sk, App Enclave's MRSIGNER, MRENCLAVE ****************/\n");
+        puts("/**************** Sealing App's sk, App Enclave's MRSIGNER, MRENCLAVE ****************/\n");
 
         isvAttEnclave.save_secret(msg4.secret.payload, msg4.secret.payload_tag);
             

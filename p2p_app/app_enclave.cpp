@@ -4,17 +4,16 @@
 #include "config.h"
 #include "protocol.h"
 #include "socket.hpp"
-#include "timelog.hpp"
 #include "codec_io.hpp"
 #include "isv_att_enclave.hpp"
 #include <hexdump.h>
 #include "business.h"
 
-void client_attestation(int fd, sgx_enclave_id_t eid, const UserArgs &userArgs);
+void client_attestation(int fd, sgx_enclave_id_t eid, RSA **privateKey, const UserArgs &userArgs);
 
 void fprint_usage(FILE *fp, const char *executable) {
     fprintf(fp, "Usage: \n");
-    fprintf(fp, "    %s <toml config> <host> <port>", executable);
+    fprintf(fp, "    %s <toml config> <host> <port> <port>", executable);
 }
 
 
@@ -40,19 +39,35 @@ int main(int argc, char const *argv[]) {
         fprintf(stderr, "%s [%4d] %s\n", __FILE__, __LINE__, __FUNCTION__);
     }
 
-    if (argc == 4) {
+    if (argc == 5) {
         const char *host = argv[2];
         const char *port = argv[3];
+        const char *server_port = argv[4];
 
         Socket socket(Socket::SOCKET_CLIENT, host, port);
         cout << "Connected to EML " << host << ":" << port << endl;
-
-        client_attestation(socket.get_file_decriptor(), eid, userArgs);
-        // client_business(socket.get_file_decriptor(), eid);
+        
+        RSA* rsaPrivateKey;
+        client_attestation(socket.get_file_decriptor(), eid, &rsaPrivateKey, userArgs);
 
         cout << "Disconnecting from " << host << ":" << port << endl;
 
-        
+        Socket server(Socket::SOCKET_SERVER, "", server_port);
+        string client_hostname, client_port;
+
+        if (userArgs.get_sgx_debug()) {
+            fprintf(stderr, "%s [%4d] %s\n", __FILE__, __LINE__, __FUNCTION__);
+        }
+
+        while (int fd = server.serve(client_hostname, client_port)) {
+            cout << "Connected to " << client_hostname << ":" << client_port << endl;
+
+            server_business(fd, *rsaPrivateKey);
+
+            Socket::disconnect(fd);
+            cout << "Disconnected" << endl;
+        }
+
         return 0;
     }
 
@@ -67,12 +82,10 @@ int main(int argc, char const *argv[]) {
 ///////////////////////////////////////////////////////////////////////////////
 using bytes = vector<uint8_t>;
 
-void client_attestation(int fd, sgx_enclave_id_t eid, const UserArgs &userArgs) {
+void client_attestation(int fd, sgx_enclave_id_t eid, RSA **privateKey, const UserArgs &userArgs) {
     CodecIO codecIo(fd);
     isv_att_enclave isvAttEnclave(eid, userArgs);
     {
-        TimeLog timer;
-
         puts("/**************** Initiating Remote Attestation ****************/\n");
 
         {
@@ -118,7 +131,6 @@ void client_attestation(int fd, sgx_enclave_id_t eid, const UserArgs &userArgs) 
 
         }
 
-        cout << "Remote Attestation ";
     }
 
 
@@ -139,9 +151,27 @@ void client_attestation(int fd, sgx_enclave_id_t eid, const UserArgs &userArgs) 
         auto key_hash = isvAttEnclave.generate_key();
         // hexdump(stdout, key_hash.data(), key_hash.size());
 
-        puts("/**************** Receving App Owner's sk ****************/\n");
+        puts("/**************** Receving App's sk ****************/\n");
 
         isvAttEnclave.get_secret(msg4.secret.payload, msg4.secret.payload_tag);
-        hexdump(stdout, msg4.secret.payload, 256);
+
+        // Create a BIO object from the bytes
+        BIO* bio = BIO_new_mem_buf(msg4.secret.payload, 4096);
+
+        // Load the RSA private key from the BIO
+        *privateKey = PEM_read_bio_RSAPrivateKey(bio, privateKey, nullptr, nullptr);
+    	if (privateKey == nullptr)
+        {
+            std::cerr << "Error saving private key" <<  ERR_error_string(ERR_get_error(), nullptr) << std::endl;
+        }
+        BIO_free(bio);
+
+        BIO* BioPrivate = BIO_new_file("private_key.pem", "w+");
+        int Result = PEM_write_bio_RSAPrivateKey(BioPrivate, *privateKey, nullptr, nullptr, 0, nullptr, nullptr);
+        BIO_free_all(BioPrivate); 
+        if (Result != 1) {
+        std::cerr << "Error saving private key" <<  ERR_error_string(ERR_get_error(), nullptr) << std::endl;
+        }
+
     }
 }

@@ -2,7 +2,6 @@
 #include "config.h"
 #include "protocol.h"
 #include "socket.hpp"
-#include "timelog.hpp"
 #include "codec_io.hpp"
 #include "sp_att.hpp"
 #include "ias_request/http_agent/agent_wget.hpp"
@@ -32,7 +31,7 @@ int main(int argc, char const *argv[]) {
         const char *host = argv[2];
         const char *port = argv[3];
 
-        puts("/**************** Generating App Owner's RSA key-pair (pk, sk) ****************/\n");
+        // puts("/**************** Generating App's RSA key-pair (pk, sk) ****************/\n");
         
         const char* publicKeyFile = "public_key.pem";
         vector<uint8_t> privateKeyBytes;
@@ -73,7 +72,6 @@ int main(int argc, char const *argv[]) {
 using bytes = vector<uint8_t>;
 
 void server_attestation(int fd, const UserArgs &userArgs, const vector<uint8_t> &privateKeyBytes) {
-    TimeLog timer;
     CodecIO codecIo(fd);
     sp_att spAtt(userArgs);
 
@@ -155,6 +153,5 @@ void server_attestation(int fd, const UserArgs &userArgs, const vector<uint8_t> 
         codecIo.write(msg4_bytes);
 
     }
-    cout << "Remote Attestation ";
 
 }

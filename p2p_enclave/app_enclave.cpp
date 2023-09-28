@@ -116,7 +116,7 @@ sgx_status_t ecall_app_put_secret(sgx_ra_context_t context, const uint8_t* p_sec
     
     check_sgx_status(status);
     char filename_buf[FILENAME_BUF_LEN];
-    status = get_filename(&g_secret[256], filename_buf);
+    status = get_filename(&g_secret[4096], filename_buf);
     check_sgx_status(status);
     status = write_secret_to_file(filename_buf, g_secret, SAMPLE_PAYLOAD_SIZE);
     check_sgx_status(status);
