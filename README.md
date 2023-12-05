@@ -1,5 +1,6 @@
 # SGX Enclave Management Layer (EML)
 
+![](assets/demo.gif)
 
 ## Requirements
 - Tested on Ubuntu 22.04.2 x86_64 with 5.15.0-76-generic kernel.
